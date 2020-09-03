@@ -8,11 +8,13 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import java.util.ArrayList;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Set;
 
 import io.flutter.embedding.android.FlutterActivity;
@@ -42,11 +44,11 @@ public class MainActivity extends FlutterActivity {
                                     result.error("UNAVAILABLE", "Battery level not available.", null);
                                 }
                             } else if (call.method.equals("getDevicesBluetooth")) {
-                                ArrayList<ModelDeviceBluetooth> btDevices = getDevicesBluetooth();
+                                JSONArray btDevices = getDevicesBluetooth();
                                 System.out.println("FlutterZsdkPlugin registered with " + btDevices.toString());
 
-                                if (btDevices.size() > 0) {
-                                    result.success(btDevices);
+                                if (btDevices.length() > 0) {
+                                    result.success(btDevices.toString());
                                 } else {
                                     result.error("UNAVAILABLE", "Printer tidak ditemukan.", null);
                                 }
@@ -58,18 +60,25 @@ public class MainActivity extends FlutterActivity {
                 );
     }
 
-    private ArrayList<ModelDeviceBluetooth> getDevicesBluetooth() {
+    private JSONArray getDevicesBluetooth() {
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-        ArrayList<ModelDeviceBluetooth> devices = new ArrayList<>();
+        JSONArray devices = new JSONArray();
         for (BluetoothDevice bt : pairedDevices) {
-            devices.add(new ModelDeviceBluetooth(bt.getName() , bt.getAddress()));
+            try {
+                JSONObject data = new JSONObject();
+                data.put("name", bt.getName());
+                data.put("mac", bt.getAddress());
+                devices.put(data);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
-        Log.d("getDevicesBT:", "getDevicesBluetooth: " + devices.toString());
+//        Log.d("getDevicesBT:", "getDevicesBluetooth: " + devices.toString());
         return devices;
     }
 
