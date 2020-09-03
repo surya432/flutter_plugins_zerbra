@@ -74,7 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _getPrinterTest() async {
     String batteryLevel;
     try {
-      final int result = await platform.invokeMethod('printTest');
+      final String result = await platform.invokeMethod('printTest');
       batteryLevel = 'Battery level at $result % .';
     } on PlatformException catch (e) {
       batteryLevel = "Failed to get battery level: '${e.message}'.";
@@ -162,7 +162,7 @@ class _MyHomePageState extends State<MyHomePage> {
           String mac = dataVendor['mac'].toString();
           return SizedBox(
             child: GestureDetector(
-              onTap: () {},
+              onTap: _getPrinterTest,
               child: Column(
                 children: [
                   ListTile(

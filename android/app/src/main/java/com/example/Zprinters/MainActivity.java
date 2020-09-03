@@ -68,6 +68,7 @@ public class MainActivity extends FlutterActivity {
 
     private void testPrint(String mac, MethodChannel.Result result) {
         try {
+                                            System.out.println("FlutterZsdkPlugin registered with print" );
             mPrintUtils = PrintUtils.getInstance();
             mPrintUtils.setPrinter(mac);
             mPrintUtils.printNavigator("Bold");
