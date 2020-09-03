@@ -71,6 +71,20 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _getPrinterTest() async {
+    String batteryLevel;
+    try {
+      final int result = await platform.invokeMethod('printTest');
+      batteryLevel = 'Battery level at $result % .';
+    } on PlatformException catch (e) {
+      batteryLevel = "Failed to get battery level: '${e.message}'.";
+    }
+
+    setState(() {
+      _batteryLevel = batteryLevel;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     var list = FutureBuilder<dynamic>(
@@ -147,18 +161,21 @@ class _MyHomePageState extends State<MyHomePage> {
           String name = dataVendor['name'].toString();
           String mac = dataVendor['mac'].toString();
           return SizedBox(
-            child: Column(
-              children: [
-                ListTile(
-                  title: Text('$name ( $mac )'),
-                ),
-                SizedBox(
-                  height: 8,
-                ),
-                new Divider(
-                  height: 2,
-                ),
-              ],
+            child: GestureDetector(
+              onTap: () {},
+              child: Column(
+                children: [
+                  ListTile(
+                    title: Text('$name ( $mac )'),
+                  ),
+                  SizedBox(
+                    height: 8,
+                  ),
+                  new Divider(
+                    height: 2,
+                  ),
+                ],
+              ),
             ),
           );
         },
