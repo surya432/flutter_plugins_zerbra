@@ -94,11 +94,8 @@ public class PrintUtils {
     public void printNormal()
     {
         try {
-            mPrinter.sendCommand("! 0 300 200 210 1");
-            mPrinter.sendCommand("TEXT 7 0 0 0 =======================================");
-            mPrinter.sendCommand("TEXT 7 0 0 10 ============= CPCL Command =============");
-            mPrinter.sendCommand("TEXT 7 0 0 30 =======================================");
-
+//            mPrinter.sendCommand("! 0 300 200 210 1");
+            mPrinter.sendCommand("Hello World");
             mPrinter.sendCommand("FORM");
             mPrinter.sendCommand("PRINT");
 
@@ -137,7 +134,6 @@ public class PrintUtils {
             mPrinter.sendCommand("! U1 SETBOLD 2");
             mPrinter.sendCommand("printCenteredBold ! U1 SETBOLD 0");
             mPrinter.sendCommand("but this text is normal.");
-
             mPrinter.sendCommand("FORM");
             mPrinter.sendCommand("PRINT");
             // Make sure the data got to the printer before closing the connection

@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:bluetooth_print/bluetooth_print.dart';
+import 'package:bluetooth_print/bluetooth_print_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(MyApp());
@@ -31,15 +34,58 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  BluetoothPrint bluetoothPrint = BluetoothPrint.instance;
+
+  bool _connected = false;
+  BluetoothDevice _device;
   static const platform = const MethodChannel('surya432.rnd.dev/zebraprint');
   String _batteryLevel = 'Unknown battery level.';
   List<dynamic> btDevices;
+  String tips = 'no device connect';
+
+  bool isShowDevices = false;
   void _incrementCounter() {
     setState(() {
+      isShowDevices = false;
       _counter++;
-      _getBatteryLevel();
-      // getBtDevices();
+      getDevices();
+      WidgetsBinding.instance.addPostFrameCallback((_) => initBluetooth());
     });
+  }
+
+  Future<void> initBluetooth() async {
+    bluetoothPrint.startScan(timeout: Duration(seconds: 4));
+
+    bool isConnected = await bluetoothPrint.isConnected;
+
+    bluetoothPrint.state.listen((state) {
+      print('cur device status: $state');
+
+      switch (state) {
+        case BluetoothPrint.CONNECTED:
+          setState(() {
+            _connected = true;
+            tips = 'connect success';
+          });
+          break;
+        case BluetoothPrint.DISCONNECTED:
+          setState(() {
+            _connected = false;
+            tips = 'disconnect success';
+          });
+          break;
+        default:
+          break;
+      }
+    });
+
+    if (!mounted) return;
+
+    if (isConnected) {
+      setState(() {
+        _connected = true;
+      });
+    }
   }
 
   Future<void> _getBtDevices() async {
@@ -50,11 +96,11 @@ class _MyHomePageState extends State<MyHomePage> {
     } on PlatformException catch (e) {
       print("Failed to get devices: '${e.message}'.");
     }
-    print(batteryLevel);
-    // setState(() {
-    //   btDevices = batteryLevel;
-    // });
-    return jsonDecode(batteryLevel);
+    print("_getBtDevices:" + batteryLevel);
+    setState(() {
+      btDevices = jsonDecode(batteryLevel);
+    });
+    // return jsonDecode(batteryLevel);
   }
 
   Future<void> _getBatteryLevel() async {
@@ -74,22 +120,23 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _getPrinterTest() async {
     String batteryLevel;
     try {
-      final String result = await platform.invokeMethod('printTest');
+      final String result = await platform
+          .invokeMethod('printTest', <String, dynamic>{"mac": "mac"});
       batteryLevel = 'Battery level at $result % .';
     } on PlatformException catch (e) {
       batteryLevel = "Failed to get battery level: '${e.message}'.";
     }
 
-    setState(() {
-      _batteryLevel = batteryLevel;
-    });
+    // setState(() {
+    //   _batteryLevel = batteryLevel;
+    // });
   }
 
   @override
   Widget build(BuildContext context) {
     var list = FutureBuilder<dynamic>(
-      future: _getBtDevices(),
-      // initialData: "Terjadi Kesalahan Get Device",
+      // future: _getBtDevices(),
+      initialData: btDevices,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           // print("data kosong ${snapshot.error}");
@@ -99,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
         } else if (snapshot.hasData &&
             snapshot.connectionState == ConnectionState.done &&
             snapshot.data.length > 0) {
-          return buildItemList(snapshot);
+          // return buildItemList(snapshot);
         } else {
           return Text("Data Kosong");
         }
@@ -109,60 +156,103 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            SizedBox(
-              height: 10,
-            ),
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-            RaisedButton(
-              child: Text('Get Battery Level'),
-              onPressed: () {
-                _getBatteryLevel();
-                _getBtDevices();
-              },
-            ),
-            Text(_batteryLevel),
-            Text("Data List Bluetooth"),
-            list,
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
+      body: buildCenter(context),
+      floatingActionButton: StreamBuilder<bool>(
+        stream: bluetoothPrint.isScanning,
+        initialData: false,
+        builder: (c, snapshot) {
+          if (snapshot.data) {
+            return FloatingActionButton(
+              child: Icon(Icons.stop),
+              onPressed: () => bluetoothPrint.stopScan(),
+              backgroundColor: Colors.red,
+            );
+          } else {
+            return FloatingActionButton(
+                child: Icon(Icons.search),
+                onPressed: () =>
+                    bluetoothPrint.startScan(timeout: Duration(seconds: 4)));
+          }
+        },
       ),
     );
   }
 
-  Widget buildItemList(AsyncSnapshot snapshot) {
-    print("DAta snapshot.data :" + snapshot.data.toString());
+  Center buildCenter(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            height: 10,
+          ),
+          StreamBuilder<List<BluetoothDevice>>(
+            stream: bluetoothPrint.scanResults,
+            initialData: [],
+            builder: (c, snapshot) => Column(
+              children: snapshot.data
+                  .map((d) => ListTile(
+                        title: Text(d.name ?? ''),
+                        subtitle: Text(d.address),
+                        onTap: () async {
+                          setState(() {
+                            _device = d;
+                          });
+                        },
+                        trailing:
+                            _device != null && _device.address == d.address
+                                ? Icon(
+                                    Icons.check,
+                                    color: Colors.green,
+                                  )
+                                : null,
+                      ))
+                  .toList(),
+            ),
+          ),
+          Divider(),
+          RaisedButton(
+            child: Text('Get Battery Level'),
+            onPressed: () {
+              getBatteryLevel();
+              // _getBtDevices();
+              getDevices();
+            },
+          ),
+          Text(_batteryLevel),
+          Text("Data List Bluetooth"),
+          // list,
+          // buildItemList(btDevices),
+          isShowDevices ? buildItemList(btDevices) : Text("Belum Ada Data"),
+        ],
+      ),
+    );
+  }
+
+  Widget buildItemList(List<dynamic> snapshot) {
     return Container(
       constraints: new BoxConstraints(
         minHeight: 90.0,
         maxHeight: double.infinity,
       ),
       child: ListView.builder(
-        itemCount: snapshot.data.length,
+        itemCount: snapshot.length,
         shrinkWrap: true,
         // physics: NeverScrollableScrollPhysics(),
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) {
-          Map<String, dynamic> dataVendor = snapshot.data[index];
+          Map<String, dynamic> dataVendor = snapshot[index];
           String name = dataVendor['name'].toString();
           String mac = dataVendor['mac'].toString();
           return SizedBox(
-            child: GestureDetector(
-              onTap: _getPrinterTest,
+            child: FlatButton(
+              onPressed: () {
+                setState(() {
+                  isShowDevices = false;
+                });
+                // printCpclDevice(mac);
+                printTestDevice(mac);
+              },
               child: Column(
                 children: [
                   ListTile(
@@ -181,5 +271,60 @@ class _MyHomePageState extends State<MyHomePage> {
         },
       ),
     );
+  }
+
+  void getDevices() async {
+    String batteryLevel;
+    try {
+      final String result = await platform.invokeMethod('getDevicesBluetooth');
+      batteryLevel = result;
+    } on PlatformException catch (e) {
+      print("Failed to get devices: '${e.message}'.");
+    }
+    print("_getBtDevices:" + batteryLevel);
+    setState(() {
+      isShowDevices = true;
+      btDevices = jsonDecode(batteryLevel);
+    });
+  }
+
+  void getBatteryLevel() async {
+    String batteryLevel;
+    try {
+      final int result = await platform.invokeMethod('getBatteryLevel');
+      batteryLevel = 'Battery level at $result % .';
+    } on PlatformException catch (e) {
+      batteryLevel = "Failed to get battery level: '${e.message}'.";
+    }
+
+    setState(() {
+      _batteryLevel = batteryLevel;
+    });
+  }
+
+  void printTestDevice(String mac) async {
+    print("start print $mac");
+    String batteryLevel;
+    try {
+      final String result = await platform
+          .invokeMethod('printTest', <String, dynamic>{"mac": mac});
+      batteryLevel = 'printTestDevice at $result % OK .';
+    } on PlatformException catch (e) {
+      batteryLevel = "Failed to get battery level: '${e.message}'.";
+    }
+  }
+
+  void printCpclDevice(String mac) async {
+    print("start print $mac");
+    String batteryLevel;
+    try {
+      final String dataPrint =
+          "! 0 200 200 210 1 TEXT 5 0 0 10 beeps for two seconds";
+      final String result = await platform.invokeMethod('sendCpclOverBluetooth',
+          <String, dynamic>{"mac": mac, "dataPrint": dataPrint});
+      batteryLevel = 'printTestDevice at $result % OK .';
+    } on PlatformException catch (e) {
+      batteryLevel = "Failed to get battery level: '${e.message}'.";
+    }
   }
 }
