@@ -5,6 +5,7 @@ import 'package:bluetooth_print/bluetooth_print_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(MyApp());
@@ -117,19 +118,51 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<void> _getPrinterTest() async {
+  Future<void> _getPrinterTest(mac) async {
+    print("start print $mac");
     String batteryLevel;
     try {
       final String result = await platform
-          .invokeMethod('printTest', <String, dynamic>{"mac": "mac"});
-      batteryLevel = 'Battery level at $result % .';
+          .invokeMethod('printTest', <String, dynamic>{"mac": mac});
+      batteryLevel = 'printTestDevice at $result % OK .';
     } on PlatformException catch (e) {
       batteryLevel = "Failed to get battery level: '${e.message}'.";
     }
+    setState(() => isShowDevices = true);
+  }
 
-    // setState(() {
-    //   _batteryLevel = batteryLevel;
-    // });
+  Future<void> _prinCpclCode(mac) async {
+    print("start print $mac");
+    String batteryLevel;
+    var dateTimeNow = DateFormat('yyyy-MM-dd H:m:s').format(DateTime.now());
+    try {
+      final String dataPrint = "! 0 200 200 100 1\r\n" +
+          // "JURNAL" +
+          "CENTER\r\n" +
+          "TEXT 4 0 20 25 PT.SUPRAMA\r\n" +
+          "LINE 0 70 360 70 1\r\n" +
+          "TEXT 7 0 0 80 $dateTimeNow | SURYA \r\n" +
+          "LINE 0 105 360 105 1\r\n" +
+          "TEXT 7 0 0 130 Aqua 650ML  5000  1   5000\r\n" +
+          "TEXT 7 0 0 150 Aqua 350ML  2500  1   2500\r\n" +
+          "TEXT 7 0 0 170 Lee Mineral 2500  1   2500\r\n" +
+          "LINE 0 225 360 225 1\r\n" +
+          "CENTER\r\n" +
+          "TEXT 7 0 0 250 POTONG DISINI\r\n" +
+          "TEXT 7 0 0 270 .\r\n" +
+          "TEXT 7 0 0 290 .\r\n" +
+          // "</br>" +
+          // "\\r\n" +
+          // "! 0 200 200 210 1\r\n" +
+          // "TEXT 7 0 0 10 beeps for two seconds\r\n" +
+          "FORM\r\n" +
+          "PRINT\r\n";
+      final String result = await platform.invokeMethod('sendCpclOverBluetooth',
+          <String, dynamic>{"mac": mac, "dataPrint": dataPrint});
+      batteryLevel = 'printTestDevice at $result % OK .';
+    } on PlatformException catch (e) {
+      batteryLevel = "Failed to get battery level: '${e.message}'.";
+    }
   }
 
   @override
@@ -214,8 +247,8 @@ class _MyHomePageState extends State<MyHomePage> {
           RaisedButton(
             child: Text('Get Battery Level'),
             onPressed: () {
-              getBatteryLevel();
-              // _getBtDevices();
+              // getBatteryLevel();
+              _getBtDevices();
               getDevices();
             },
           ),
@@ -246,13 +279,14 @@ class _MyHomePageState extends State<MyHomePage> {
           String mac = dataVendor['mac'].toString();
           return SizedBox(
             child: FlatButton(
-              onPressed: () {
-                setState(() {
-                  isShowDevices = false;
-                });
-                // printCpclDevice(mac);
-                printTestDevice(mac);
-              },
+              onPressed: isShowDevices
+                  ? () async {
+                      setState(() => isShowDevices = false);
+
+                      await _prinCpclCode(mac);
+                      // await _getPrinterTest(mac);
+                    }
+                  : null,
               child: Column(
                 children: [
                   ListTile(
@@ -317,9 +351,29 @@ class _MyHomePageState extends State<MyHomePage> {
   void printCpclDevice(String mac) async {
     print("start print $mac");
     String batteryLevel;
+    var dateTimeNow = DateFormat('yyyy-MM-dd H:m:s').format(DateTime.now());
     try {
-      final String dataPrint =
-          "! 0 200 200 210 1 TEXT 5 0 0 10 beeps for two seconds";
+      final String dataPrint = "! 0 200 200 210 1\r\n" +
+          // "JURNAL" +
+          "CENTER\r\n" +
+          "TEXT 4 0 20 25 PT.SUPRAMA\r\n" +
+          "LINE 0 70 360 70 1\r\n" +
+          "TEXT 7 0 0 80 $dateTimeNow | SURYA \r\n" +
+          "LINE 0 105 360 105 1\r\n" +
+          "TEXT 7 0 0 130 Aqua 650ML  5000  1   5000\r\n" +
+          "TEXT 7 0 0 150 Aqua 350ML  2500  1   2500\r\n" +
+          "TEXT 7 0 0 170 Lee Mineral 2500  1   2500\r\n" +
+          "LINE 0 225 360 225 1\r\n" +
+          "CENTER\r\n" +
+          "TEXT 7 0 0 250 POTONG DISINI\r\n" +
+          "TEXT 7 0 0 270 .\r\n" +
+          "TEXT 7 0 0 290 .\r\n" +
+          // "</br>" +
+          // "\\r\n" +
+          // "! 0 200 200 210 1\r\n" +
+          // "TEXT 7 0 0 10 beeps for two seconds\r\n" +
+          // "FORM\r\n" +
+          "PRINT\r\n";
       final String result = await platform.invokeMethod('sendCpclOverBluetooth',
           <String, dynamic>{"mac": mac, "dataPrint": dataPrint});
       batteryLevel = 'printTestDevice at $result % OK .';

@@ -111,10 +111,18 @@ public class PrintUtils {
     public void printNormalCentered()
     {
         try {
-            mPrinter.sendCommand("! 0 200 200 210 3");
+            mPrinter.sendCommand("! 0 200 200 210 1");
             mPrinter.sendCommand("CENTER");
-            mPrinter.sendCommand("TEXT 4 0 0 50 TESTING 001");
-
+            mPrinter.sendCommand("TEXT 4 0 0 0 PT.SUPRAMA");
+            mPrinter.sendCommand("LINE 0 70 360 70 1");
+            mPrinter.sendCommand("TEXT 7 0 0 80 2020-09-06 | SURYA \r\n");
+            mPrinter.sendCommand("LINE 0 105 360 105 1");
+            // mPrinter.sendCommand("JOURNAL");
+            mPrinter.sendCommand("TEXT 5 0 0 130 14:40 PM Thursday, 06/04/20");
+            mPrinter.sendCommand("TEXT 5 0 0 150 QTY  Item            harga  Total");
+            mPrinter.sendCommand("TEXT 5 0 0 170 1   Aqua 350ML Botol 2500   2500");
+            mPrinter.sendCommand("TEXT 5 0 0 190 2   Aqua 350ML Botol 2500   5000");
+            mPrinter.sendCommand("LINE 0 215 360 215 1");
             mPrinter.sendCommand("FORM");
             mPrinter.sendCommand("PRINT");
 
