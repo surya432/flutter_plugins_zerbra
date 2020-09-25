@@ -113,12 +113,6 @@ public class MainActivity extends FlutterActivity {
                         if (DEBUG) {
                             System.out.println("sendCpclOverBluetooth:  [" + dataPrint + "]");
                         }
-                        String cpclData = "! 0 200 200 200 1\r\n"
-                                + "TEXT 4 0 30 40 This is a CPCL test.\r\n"
-                                + "FORM\r\n"
-                                + "PRINT\r\n";
-
-                        // Send the data to printer as a byte array.
                         // connection.write(cpclData.getBytes());
                        connection.write(dataPrint.getBytes());
 

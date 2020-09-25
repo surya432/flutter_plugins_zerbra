@@ -4,7 +4,6 @@ import 'package:bluetooth_print/bluetooth_print.dart';
 import 'package:bluetooth_print/bluetooth_print_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
 
 void main() {
@@ -34,10 +33,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   BluetoothPrint bluetoothPrint = BluetoothPrint.instance;
 
-  bool _connected = false;
   BluetoothDevice _device;
   static const platform = const MethodChannel('surya432.rnd.dev/zebraprint');
   String _batteryLevel = 'Unknown battery level.';
@@ -48,7 +45,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void _incrementCounter() {
     setState(() {
       isShowDevices = false;
-      _counter++;
       getDevices();
       WidgetsBinding.instance.addPostFrameCallback((_) => initBluetooth());
     });
@@ -65,13 +61,11 @@ class _MyHomePageState extends State<MyHomePage> {
       switch (state) {
         case BluetoothPrint.CONNECTED:
           setState(() {
-            _connected = true;
             tips = 'connect success';
           });
           break;
         case BluetoothPrint.DISCONNECTED:
           setState(() {
-            _connected = false;
             tips = 'disconnect success';
           });
           break;
@@ -83,9 +77,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!mounted) return;
 
     if (isConnected) {
-      setState(() {
-        _connected = true;
-      });
+      setState(() {});
     }
   }
 
@@ -136,27 +128,8 @@ class _MyHomePageState extends State<MyHomePage> {
     String batteryLevel;
     var dateTimeNow = DateFormat('yyyy-MM-dd H:m:s').format(DateTime.now());
     try {
-      final String dataPrint = "! 0 200 200 100 1\r\n" +
-          // "JURNAL" +
-          "CENTER\r\n" +
-          "TEXT 4 0 20 25 PT.SUPRAMA\r\n" +
-          "LINE 0 70 360 70 1\r\n" +
-          "TEXT 7 0 0 80 $dateTimeNow | SURYA \r\n" +
-          "LINE 0 105 360 105 1\r\n" +
-          "TEXT 7 0 0 130 Aqua 650ML  5000  1   5000\r\n" +
-          "TEXT 7 0 0 150 Aqua 350ML  2500  1   2500\r\n" +
-          "TEXT 7 0 0 170 Lee Mineral 2500  1   2500\r\n" +
-          "LINE 0 225 360 225 1\r\n" +
-          "CENTER\r\n" +
-          "TEXT 7 0 0 250 POTONG DISINI\r\n" +
-          "TEXT 7 0 0 270 .\r\n" +
-          "TEXT 7 0 0 290 .\r\n" +
-          // "</br>" +
-          // "\\r\n" +
-          // "! 0 200 200 210 1\r\n" +
-          // "TEXT 7 0 0 10 beeps for two seconds\r\n" +
-          "FORM\r\n" +
-          "PRINT\r\n";
+      final String dataPrint =
+          "! 0 200 200 515 1\r\nJURNAL\r\nCENTER 383\r\nTEXT 4 0 0 15 PT.SUPRAMA\r\nTEXT 7 0 0 55 --------------------------------\r\nLEFT\r\nTEXT 7 0 0 75 \r\nLEFT\r\nTEXT 7 0 0 75 Sales    :Surya Hadi Prastya\r\nLEFT\r\nTEXT 7 0 0 95 Penerima :Surya Heho\r\nRIGHT\r\nTEXT 7 0 0 130 25-04-2020 08:45 \r\nLEFT\r\nTEXT 7 0 0 130 #0501479923   \r\nTEXT 7 0 0 150 --------------------------------\r\nLEFT\r\nTEXT 7 0 0 170 Aqua GLN 20Lit 991   10.000.000\r\nLEFT\r\nTEXT 7 0 0 190  er ASLI AQUA  \r\nLEFT\r\nTEXT 7 0 0 210 Air Mineral 36   4       10.000\r\nLEFT\r\nTEXT 7 0 0 230  0 Ml          \r\nLEFT\r\nTEXT 7 0 0 250 FruitTea 350ML   2        7.000\r\nLEFT\r\nTEXT 7 0 0 270 Mie Burung Dar   2       70.000\r\nLEFT\r\nTEXT 7 0 0 290  a Enaknya nyam\r\nLEFT\r\nTEXT 7 0 0 310  bung terus    \r\nTEXT 7 0 0 330 --------------------------------\r\nRIGHT\r\nTEXT 7 0 0 350       10.087.000 \r\nLEFT\r\nTEXT 7 0 0 350 Total        :\r\nRIGHT\r\nTEXT 7 0 0 370            2.000 \r\nLEFT\r\nTEXT 7 0 0 370 Disc         :\r\nRIGHT\r\nTEXT 7 0 0 390       10.085.000 \r\nLEFT\r\nTEXT 7 0 0 390 Total Bayar  :\r\nCENTER\r\nTEXT 5 1 0 420 DONE\r\nPRINT\r\n";
       final String result = await platform.invokeMethod('sendCpclOverBluetooth',
           <String, dynamic>{"mac": mac, "dataPrint": dataPrint});
       batteryLevel = 'printTestDevice at $result % OK .';
@@ -281,7 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: FlatButton(
               onPressed: isShowDevices
                   ? () async {
-                      setState(() => isShowDevices = false);
+                      // setState(() => isShowDevices = false);
 
                       await _prinCpclCode(mac);
                       // await _getPrinterTest(mac);
@@ -353,13 +326,13 @@ class _MyHomePageState extends State<MyHomePage> {
     String batteryLevel;
     var dateTimeNow = DateFormat('yyyy-MM-dd H:m:s').format(DateTime.now());
     try {
-      final String dataPrint = "! 0 200 200 210 1\r\n" +
+      String dataPrint = "! 0 200 200 210 1\r\n" +
           // "JURNAL" +
           "CENTER\r\n" +
           "TEXT 4 0 20 25 PT.SUPRAMA\r\n" +
           "LINE 0 70 360 70 1\r\n" +
           "TEXT 7 0 0 80 $dateTimeNow | SURYA \r\n" +
-          "LINE 0 105 360 105 1\r\n" +
+          "LINE 0 105 383 105 1\r\n" +
           "TEXT 7 0 0 130 Aqua 650ML  5000  1   5000\r\n" +
           "TEXT 7 0 0 150 Aqua 350ML  2500  1   2500\r\n" +
           "TEXT 7 0 0 170 Lee Mineral 2500  1   2500\r\n" +
@@ -374,6 +347,8 @@ class _MyHomePageState extends State<MyHomePage> {
           // "TEXT 7 0 0 10 beeps for two seconds\r\n" +
           // "FORM\r\n" +
           "PRINT\r\n";
+      dataPrint =
+          "! 10 200 200 275 1\r\nJURNAL\r\nCENTER\r\nTEXT 4 0 20 25 PT.SUPRAMA\r\nLINE 0 50 383 50\r\nLEFT\r\nTEXT 7 0 0 75 Aqua GLN 20 99@250000  10000000\r\nTEXT 7 0 0 100 Liter ASLI  \r\nTEXT 7 0 0 125 Air Mineral  4@2500       10000\r\nTEXT 7 0 0 150  360 Ml \r\nTEXT 7 0 0 175 FruitTea 35  2@3500        7000\r\nTEXT 7 0 0 200 0ML \r\nPRINT\r\n";
       final String result = await platform.invokeMethod('sendCpclOverBluetooth',
           <String, dynamic>{"mac": mac, "dataPrint": dataPrint});
       batteryLevel = 'printTestDevice at $result % OK .';
